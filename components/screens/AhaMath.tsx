@@ -5,9 +5,8 @@ import {
   directionOrder,
   directions,
   formatUsd,
+  planForTarget,
   pluralProjects,
-  projectsForTarget,
-  totalForTarget,
   type DirectionId,
 } from "@/lib/config";
 import { Halo } from "../Deco";
@@ -58,8 +57,8 @@ export function AhaMath({
             твои {formatUsd(target)}
           </Title>
           <p className="mt-4 text-[15px] leading-relaxed text-ink/55">
-            Считаем по самой нижней границе вилки. Если брать дороже, проектов
-            нужно меньше.
+            Чем выше твоя цель, тем крупнее проект, а не тем больше мелких
+            заказов. Вот какой чек под неё нужен.
           </p>
         </div>
       </div>
@@ -68,8 +67,7 @@ export function AhaMath({
         {directionOrder.map((id, i) => {
           const d = directions[id];
           const base = 0.2 * i;
-          const count = projectsForTarget(id, target);
-          const total = totalForTarget(id, target);
+          const plan = planForTarget(id, target);
           return (
             <motion.div
               key={id}
@@ -84,27 +82,27 @@ export function AhaMath({
               </p>
 
               <div className="mt-5 flex flex-wrap gap-2">
-                {Array.from({ length: Math.min(count, 12) }).map((_, k) => (
-                  <Token key={k} price={d.priceFrom} delay={base + 0.25 + k * 0.06} />
+                {Array.from({ length: plan.count }).map((_, k) => (
+                  <Token
+                    key={k}
+                    price={plan.tier.price}
+                    delay={base + 0.25 + k * 0.1}
+                  />
                 ))}
-                {count > 12 ? (
-                  <span className="self-center text-[13px] font-medium text-ink/45">
-                    и ещё {count - 12}
-                  </span>
-                ) : null}
               </div>
 
               <p className="mt-5 text-[15px] font-medium text-ink/55">
-                {count} {pluralProjects(count)} &times; {formatUsd(d.priceFrom)}
+                {plan.count} {pluralProjects(plan.count)} &times;{" "}
+                {formatUsd(plan.tier.price)}
               </p>
               <p
                 className="mt-1 text-[44px] font-bold leading-none text-ink-deep"
                 style={{ letterSpacing: "-0.045em" }}
               >
-                {formatUsd(total)}
+                {formatUsd(plan.total)}
               </p>
               <p className="mt-3 text-[13px] leading-snug text-ink/45">
-                Или один проект дороже вместо нескольких мелких.
+                Один такой проект это {plan.tier.label}.
               </p>
             </motion.div>
           );

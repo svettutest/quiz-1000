@@ -1,2 +1,2 @@
-:HL["/quiz-1000/_next/static/chunks/3c3alz25ixl-7.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"/_not-found","param":null,"prefetchHints":0,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}}}},"staleTime":300,"buildId":"V8LL1d_V6NhuffNpVFq19"}
+:HL["/quiz-1000/_next/static/chunks/19ind407fx43r.css","style"]
+0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"/_not-found","param":null,"prefetchHints":0,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}}}},"staleTime":300,"buildId":"fn6Fyeb8CvPfIpDBOZ7Hf"}

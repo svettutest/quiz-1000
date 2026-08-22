@@ -19,8 +19,11 @@ export interface Direction {
   /** Как звучит ориентир рынка. Формулировка «от и выше», не фиксированная цена */
   marketLine: string;
 
-  /** Сколько проектов по нижней границе складываются в цель */
-  projectsForGoal: number;
+  /**
+   * Лесенка чеков по возрастанию. Чем выше цель человека, тем крупнее берём
+   * проект, а не тем больше набираем мелких заказов.
+   */
+  tiers: PriceTier[];
   /** Что человек будет создавать */
   deliverable: string;
   /** Как выглядит AI-процесс, по шагам */
@@ -31,6 +34,13 @@ export interface Direction {
   coursePackage: CoursePackage;
   /** Шаги пути к первой $1000 */
   path: string[];
+}
+
+export interface PriceTier {
+  /** Чек за один проект, USD */
+  price: number;
+  /** Что это за проект по объёму */
+  label: string;
 }
 
 export interface CoursePackage {
@@ -53,14 +63,34 @@ export interface CoursePackage {
 /** Цель по умолчанию, если человек ещё не ответил. */
 export const targetAmount = 1000;
 
-/** Сколько проектов по нижней границе нужно, чтобы закрыть цель. */
-export function projectsForTarget(id: DirectionId, target: number): number {
-  return Math.max(1, Math.ceil(target / directions[id].priceFrom));
+/** Больше этого числа заказов показывать бессмысленно, это читается как галера. */
+const MAX_PROJECTS = 4;
+
+export interface Plan {
+  tier: PriceTier;
+  count: number;
+  total: number;
 }
 
-/** Сумма, которая реально набирается этим количеством проектов. */
+/**
+ * Подбираем самый доступный чек, при котором до цели остаётся не больше
+ * четырёх проектов. Если цель большая, поднимаемся по лесенке вверх.
+ */
+export function planForTarget(id: DirectionId, target: number): Plan {
+  const tiers = directions[id].tiers;
+  const fit =
+    tiers.find((t) => Math.ceil(target / t.price) <= MAX_PROJECTS) ??
+    tiers[tiers.length - 1];
+  const count = Math.max(1, Math.ceil(target / fit.price));
+  return { tier: fit, count, total: count * fit.price };
+}
+
+export function projectsForTarget(id: DirectionId, target: number): number {
+  return planForTarget(id, target).count;
+}
+
 export function totalForTarget(id: DirectionId, target: number): number {
-  return projectsForTarget(id, target) * directions[id].priceFrom;
+  return planForTarget(id, target).total;
 }
 
 /** Склонение слова «проект» под любое число. */
@@ -89,7 +119,12 @@ export const directions: Record<DirectionId, Direction> = {
     priceNote: "и выше",
     marketLine:
       "AI-автоматизация для бизнеса на рынке сейчас начинается от $1,000 за проект. Верхней границы нет: чем больше процессов закрываешь, тем дороже работа.",
-    projectsForGoal: 1,
+    tiers: [
+      { price: 1000, label: "бот или AI-ассистент" },
+      { price: 2000, label: "связка из нескольких процессов" },
+      { price: 3000, label: "автоматизация отдела" },
+      { price: 5000, label: "система под ключ" },
+    ],
     deliverable: "Автоматизированные процессы и AI-ассистенты для бизнеса.",
     process: [
       "разбор процесса",
@@ -134,7 +169,12 @@ export const directions: Record<DirectionId, Direction> = {
     priceNote: "и выше",
     marketLine:
       "Лендинг под задачу бизнеса на рынке стоит от $500. Страница под запуск с воронкой и квизом уходит за $1,500 и дороже.",
-    projectsForGoal: 2,
+    tiers: [
+      { price: 500, label: "лендинг под услугу" },
+      { price: 1000, label: "страница под запуск" },
+      { price: 1500, label: "сайт с воронкой и квизом" },
+      { price: 3000, label: "сайт под ключ с сопровождением" },
+    ],
     deliverable: "Готовые посадочные страницы для бизнеса.",
     process: [
       "исследование",
@@ -180,7 +220,12 @@ export const directions: Record<DirectionId, Direction> = {
     priceNote: "и выше",
     marketLine:
       "Контент-пакет можно начинать брать от $250. Большой пакет под запуск, с креативами и видео, стоит и $1,000 за один проект.",
-    projectsForGoal: 4,
+    tiers: [
+      { price: 250, label: "стартовый пакет креативов" },
+      { price: 500, label: "пакет на месяц" },
+      { price: 1000, label: "большой пакет под запуск" },
+      { price: 2000, label: "контент на потоке, помесячно" },
+    ],
     deliverable: "Креативы, видео и контент-пакеты для бизнеса.",
     process: ["бриф", "идея", "сценарий", "генерация", "сборка", "проверка"],
     examples: [
@@ -214,12 +259,6 @@ export const directions: Record<DirectionId, Direction> = {
 };
 
 export const directionOrder: DirectionId[] = ["automation", "landing", "content"];
-
-/** Сумма по нижней границе вилки: 1×1000, 2×500, 4×250. Везде ровно $1,000. */
-export function totalForDirection(id: DirectionId): number {
-  const d = directions[id];
-  return d.priceFrom * d.projectsForGoal;
-}
 
 export function formatUsd(value: number): string {
   return "$" + value.toLocaleString("en-US");

@@ -93,9 +93,9 @@ export function rankDirections(scores: Record<DirectionId, number>): DirectionId
 }
 
 const rankLabels = [
-  "Лучше всего подходит для старта",
-  "Хорошая альтернатива",
-  "Можно рассмотреть позже",
+  "Твой маршрут",
+  "Второй вариант",
+  "Третий вариант",
 ];
 
 export function rankLabel(index: number): string {
@@ -113,44 +113,139 @@ const skillNames: Partial<Record<SkillId, string>> = {
   automation: "автоматизациях",
 };
 
-const startPoint: Record<AiLevel, string> = {
-  none: "подходит под твою стартовую точку, начинать можно с нуля",
-  chatgpt: "подходит под твою стартовую точку, база в AI у тебя уже есть",
-  tools: "подходит под твою стартовую точку, ты уже пробуешь разные инструменты",
-  work: "подходит под твою стартовую точку, ты уже работаешь с AI",
+/**
+ * Аргументы за направление. Осознанно разные у трёх направлений:
+ * если писать всем одно и то же, квиз выглядит так, будто он ничего не выбрал.
+ */
+const ownStrength: Record<DirectionId, string> = {
+  content:
+    "самый низкий порог входа из трёх, первый пример можно собрать за вечер",
+  landing:
+    "законченный продукт, за который бизнес платит сразу и целиком",
+  automation:
+    "самый дорогой чек из трёх, одна работа закрывает большую часть цели",
 };
 
-const timeReason: Record<TimeId, string> = {
-  week: "соответствует времени, которое ты готов уделять, несколько часов в неделю",
-  hour: "соответствует времени, которое ты готов уделять, около часа в день",
-  few: "соответствует времени, которое ты готов уделять, 2-3 часа в день",
-  full: "соответствует времени, которое ты готов уделять, ты готов заниматься полноценно",
+/** Как уровень AI играет именно на это направление. */
+const levelFit: Record<DirectionId, Partial<Record<AiLevel, string>>> = {
+  content: {
+    none: "здесь твой старт с нуля не мешает, инструменты простые",
+    chatgpt: "того, что ты уже умеешь в ChatGPT, для старта достаточно",
+  },
+  landing: {
+    chatgpt: "твоего уровня AI хватает, чтобы собрать страницу целиком",
+    tools: "ты уже пробуешь разные инструменты, это ровно то, что нужно здесь",
+  },
+  automation: {
+    tools: "ты уже работаешь с разными инструментами, здесь это главный актив",
+    work: "ты используешь AI в работе, значит процессы видишь изнутри",
+  },
 };
+
+/** Как доступное время играет именно на это направление. */
+const timeFit: Record<DirectionId, Partial<Record<TimeId, string>>> = {
+  content: {
+    week: "укладывается в несколько часов в неделю",
+    hour: "спокойно делается по часу в день",
+  },
+  landing: {
+    hour: "один проект это несколько вечеров",
+    few: "при 2-3 часах в день проект собирается за пару дней",
+    full: "на полном погружении можно вести несколько проектов сразу",
+  },
+  automation: {
+    few: "на разбор процесса клиента нужно время, у тебя оно есть",
+    full: "полное погружение здесь окупается быстрее всего",
+  },
+};
+
+/** Почему это направление не стоит брать первым. */
+const blockers: Record<DirectionId, Partial<Record<AiLevel, string>>> = {
+  automation: {
+    none: "нужен уверенный уровень AI и понимание бизнес-процессов, с нуля это долго",
+    chatgpt: "одного ChatGPT здесь мало, нужны интеграции и разбор процессов",
+  },
+  landing: {
+    none: "нужен хотя бы базовый вкус и насмотренность, иначе первый сайт будет стоить дёшево",
+  },
+  content: {},
+};
+
+const timeBlockers: Record<DirectionId, Partial<Record<TimeId, string>>> = {
+  automation: {
+    week: "клиент по автоматизации требует плотного контакта, нескольких часов в неделю не хватит",
+    hour: "разбор процесса не помещается в час в день",
+  },
+  landing: {
+    week: "проект придётся тянуть неделями, клиент устанет ждать",
+  },
+  content: {},
+};
+
+export interface Verdict {
+  /** Аргументы за. Заполняются только у выбранного маршрута */
+  pros: string[];
+  /** Почему не сейчас. Заполняются у отклонённых */
+  cons: string[];
+  /** Когда к этому вернуться */
+  later: string | null;
+}
 
 /**
- * Причины собираются из реальных ответов по шаблонам из ТЗ.
- * Ничего, кроме этих формулировок, не показываем.
+ * Первый маршрут получает аргументы за, остальные два честно объясняют,
+ * почему начинать с них сейчас не стоит. Так квиз даёт один ответ, а не три.
  */
-export function reasonsFor(id: DirectionId, input: ScoreInput): string[] {
-  const reasons: string[] = [];
-
-  if (input.aiLevel) reasons.push(startPoint[input.aiLevel]);
-
+export function verdictFor(
+  id: DirectionId,
+  rank: number,
+  input: ScoreInput,
+  winnerTitle: string,
+): Verdict {
   const matched = input.skills.filter((s) => skillMap[id].includes(s));
-  if (matched.length > 0) {
-    const names = matched.map((s) => skillNames[s]).filter(Boolean);
+  const names = matched.map((s) => skillNames[s]).filter(Boolean) as string[];
+
+  if (rank === 0) {
+    const pros: string[] = [];
+
     if (names.length > 0) {
-      reasons.push("у тебя уже есть опыт в " + names.join(" и "));
+      pros.push("у тебя уже есть опыт в " + names.join(" и ") + ", он здесь идёт в дело");
     }
+    if (input.preferredDirection === id) {
+      pros.push("ты сам выбрал это направление как интересное");
+    }
+    if (input.aiLevel && levelFit[id][input.aiLevel]) {
+      pros.push(levelFit[id][input.aiLevel] as string);
+    }
+    if (input.availableTime && timeFit[id][input.availableTime]) {
+      pros.push(timeFit[id][input.availableTime] as string);
+    }
+    pros.push(ownStrength[id]);
+
+    return { pros, cons: [], later: null };
   }
 
-  if (input.preferredDirection === id) {
-    reasons.push("ты сам выбрал это направление как интересное");
+  const cons: string[] = [];
+
+  if (input.aiLevel && blockers[id][input.aiLevel]) {
+    cons.push(blockers[id][input.aiLevel] as string);
+  }
+  if (input.availableTime && timeBlockers[id][input.availableTime]) {
+    cons.push(timeBlockers[id][input.availableTime] as string);
+  }
+  if (names.length === 0) {
+    cons.push("опыта, который сюда ложится, у тебя пока нет");
+  }
+  if (cons.length === 0) {
+    cons.push(
+      rank === 1
+        ? "направление рабочее, но стартовать сразу в двух это потерять оба"
+        : "порог входа выше, чем у твоего первого маршрута",
+    );
   }
 
-  if (input.availableTime) reasons.push(timeReason[input.availableTime]);
-
-  reasons.push("значительную часть процесса можно выполнять с AI");
-
-  return reasons;
+  return {
+    pros: [],
+    cons,
+    later: "Вернуться сюда, когда закроешь первые проекты по направлению " + winnerTitle,
+  };
 }

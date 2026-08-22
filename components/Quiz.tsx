@@ -340,11 +340,7 @@ export function Quiz() {
         {step === "platform" ? <Platform onNext={next} /> : null}
 
         {step === "tracks" ? (
-          <Tracks
-            recommended={recommended}
-            target={target}
-            onRestart={() => go("intro")}
-          />
+          <Tracks recommended={recommended} onRestart={() => go("intro")} />
         ) : null}
       </motion.div>
     </AnimatePresence>
