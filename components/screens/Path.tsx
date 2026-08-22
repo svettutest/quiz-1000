@@ -1,18 +1,27 @@
 "use client";
 
 import { motion } from "motion/react";
-import { directions, formatUsd, targetAmount, type DirectionId } from "@/lib/config";
+import {
+  directions,
+  formatUsd,
+  pluralProjects,
+  projectsForTarget,
+  type DirectionId,
+} from "@/lib/config";
 import { Counter, Halo } from "../Deco";
 import { PillButton, Screen, Title } from "../Ui";
 
 export function Path({
   id,
+  target,
   onNext,
 }: {
   id: DirectionId;
+  target: number;
   onNext: () => void;
 }) {
   const steps = directions[id].path;
+  const count = projectsForTarget(id, target);
 
   return (
     <Screen
@@ -25,9 +34,10 @@ export function Path({
       <div className="relative pt-6">
         <Halo />
         <div className="relative">
-          <Title>Что отделяет тебя от первой $1000?</Title>
+          <Title>Что отделяет тебя от {formatUsd(target)}?</Title>
           <p className="mt-3 text-[15px] leading-relaxed text-ink/50">
-            Направление: {directions[id].title.toLowerCase()}
+            Направление: {directions[id].title.toLowerCase()}. Нужно взять{" "}
+            {count} {pluralProjects(count)} от {formatUsd(directions[id].priceFrom)}.
           </p>
         </div>
       </div>
@@ -80,7 +90,7 @@ export function Path({
               className="text-[46px] font-bold leading-none text-ink-deep"
               style={{ letterSpacing: "-0.045em" }}
             >
-              <Counter value={targetAmount} prefix="$" delay={0.18 * steps.length} />
+              <Counter value={target} prefix="$" delay={0.18 * steps.length} />
             </p>
           </motion.div>
         </div>
@@ -88,7 +98,7 @@ export function Path({
 
       <p className="mt-8 text-[13px] leading-relaxed text-ink/40">
         Между тобой и результатом стоит последовательность действий, а не магия.
-        Каждый шаг можно освоить. Ориентир суммы: {formatUsd(targetAmount)}.
+        Каждый шаг можно освоить.
       </p>
     </Screen>
   );

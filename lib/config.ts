@@ -11,50 +11,93 @@ export interface Direction {
   title: string;
   /** Короткое описание для карточки выбора */
   blurb: string;
-  /** Ориентировочная стоимость одного проекта или пакета, USD */
-  examplePrice: number;
-  /** Сколько таких проектов складываются в цель */
+
+  /** Нижняя граница вилки: с этого можно начинать брать, USD */
+  priceFrom: number;
+  /** Приписка к вилке. Потолка не ставим, он открытый */
+  priceNote: string;
+  /** Как звучит ориентир рынка. Формулировка «от и выше», не фиксированная цена */
+  marketLine: string;
+
+  /** Сколько проектов по нижней границе складываются в цель */
   projectsForGoal: number;
-  /** Подпись под ценой на экране денежного aha */
-  priceCaption: string;
   /** Что человек будет создавать */
   deliverable: string;
   /** Как выглядит AI-процесс, по шагам */
   process: string[];
-  /** Что необходимо научиться делать человеку */
-  humanSkills: string[];
   /** Примеры результата */
   examples: string[];
-  /** Чему учится ученик внутри программы */
-  curriculum: string[];
+  /** Пакет программы Академии, который закрывает это направление */
+  coursePackage: CoursePackage;
   /** Шаги пути к первой $1000 */
   path: string[];
 }
 
+export interface CoursePackage {
+  /** Номер пакета в программе */
+  number: number;
+  /** Название пакета как на сайте курса */
+  name: string;
+  /** Модули пакета */
+  modules: string[];
+  /**
+   * Цена участия. Пока не проставлена: сетка Потока II ($397 / $647 / $1499 / $2999)
+   * устарела, актуальную ждём от Влада. Как только придёт, ставим сюда и в UI
+   * появляются кнопка и цена. FIXME(pricing)
+   */
+  price: number | null;
+  /** Куда ведёт кнопка перехода на пакет. FIXME(pricing) */
+  url: string | null;
+}
+
+/** Цель по умолчанию, если человек ещё не ответил. */
 export const targetAmount = 1000;
+
+/** Сколько проектов по нижней границе нужно, чтобы закрыть цель. */
+export function projectsForTarget(id: DirectionId, target: number): number {
+  return Math.max(1, Math.ceil(target / directions[id].priceFrom));
+}
+
+/** Сумма, которая реально набирается этим количеством проектов. */
+export function totalForTarget(id: DirectionId, target: number): number {
+  return projectsForTarget(id, target) * directions[id].priceFrom;
+}
+
+/** Склонение слова «проект» под любое число. */
+export function pluralProjects(n: number): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 14) return "проектов";
+  if (mod10 === 1) return "проект";
+  if (mod10 >= 2 && mod10 <= 4) return "проекта";
+  return "проектов";
+}
+
+/** Философия программы, формулировка Влада. Показываем один раз, на экране программы. */
+export const coursePhilosophy =
+  "Не обучить маркетингу, а дать инструменты, которые делают маркетинг за тебя.";
+
+export const courseResultLine =
+  "Результат меряется деньгами, которые ученик заработал во время обучения, а не тем, что он всё посмотрел.";
 
 export const directions: Record<DirectionId, Direction> = {
   automation: {
     id: "automation",
     title: "AI-автоматизации",
     blurb: "Боты, AI-ассистенты и автоматизация процессов бизнеса.",
-    examplePrice: 1000,
+    priceFrom: 1000,
+    priceNote: "и выше",
+    marketLine:
+      "AI-автоматизация для бизнеса на рынке сейчас начинается от $1,000 за проект. Верхней границы нет: чем больше процессов закрываешь, тем дороже работа.",
     projectsForGoal: 1,
-    priceCaption: "Пример стоимости проекта",
     deliverable: "Автоматизированные процессы и AI-ассистенты для бизнеса.",
     process: [
       "разбор процесса",
       "сценарий",
-      "сборка бота",
+      "сборка агента",
       "интеграции",
       "тест",
       "передача клиенту",
-    ],
-    humanSkills: [
-      "понимать процесс бизнеса",
-      "разложить задачу на шаги",
-      "собрать требования",
-      "довести систему до рабочего состояния",
     ],
     examples: [
       "AI-бот",
@@ -63,13 +106,17 @@ export const directions: Record<DirectionId, Direction> = {
       "автоматизация повторяющегося процесса",
       "простые интеграции",
     ],
-    curriculum: [
-      "AI-ботов",
-      "AI-ассистентов",
-      "автоматизации",
-      "интеграции",
-      "автоматизацию бизнес-процессов",
-    ],
+    coursePackage: {
+      number: 3,
+      name: "Автоматизация",
+      modules: [
+        "Создание AI-агента, продавца 24/7",
+        "Вайб-кодинг приложений",
+        "Сотрудник AI-таргетолог",
+      ],
+      price: null,
+      url: null,
+    },
     path: [
       "Научиться собирать рабочую AI-автоматизацию",
       "Собрать первый сильный пример",
@@ -83,9 +130,11 @@ export const directions: Record<DirectionId, Direction> = {
     id: "landing",
     title: "AI-лендинги",
     blurb: "Посадочные страницы для бизнеса с помощью AI.",
-    examplePrice: 500,
+    priceFrom: 500,
+    priceNote: "и выше",
+    marketLine:
+      "Лендинг под задачу бизнеса на рынке стоит от $500. Страница под запуск с воронкой и квизом уходит за $1,500 и дороже.",
     projectsForGoal: 2,
-    priceCaption: "Пример стоимости проекта",
     deliverable: "Готовые посадочные страницы для бизнеса.",
     process: [
       "исследование",
@@ -96,26 +145,24 @@ export const directions: Record<DirectionId, Direction> = {
       "адаптация",
       "проверка",
     ],
-    humanSkills: [
-      "понимать задачу бизнеса",
-      "контролировать качество",
-      "собирать требования",
-      "доводить результат до готового продукта",
-    ],
     examples: [
       "лендинг под услугу",
       "страница под запуск",
       "сайт-визитка для локального бизнеса",
       "посадочная под рекламу",
     ],
-    curriculum: [
-      "исследование бизнеса",
-      "структуру",
-      "тексты",
-      "дизайн",
-      "сборку сайта с AI",
-      "адаптацию и QA",
-    ],
+    coursePackage: {
+      number: 1,
+      name: "Продвинутое обучение нейросетям",
+      modules: [
+        "Создание AI-ассистентов",
+        "Глубокое исследование",
+        "Создание оффера по Хормози",
+        "Вайб-кодинг лендингов",
+      ],
+      price: null,
+      url: null,
+    },
     path: [
       "Научиться создавать качественный AI-лендинг",
       "Собрать первый сильный пример",
@@ -129,24 +176,13 @@ export const directions: Record<DirectionId, Direction> = {
     id: "content",
     title: "AI-контент",
     blurb: "Креативы, видео, контент и материалы для воронок.",
-    examplePrice: 300,
+    priceFrom: 250,
+    priceNote: "и выше",
+    marketLine:
+      "Контент-пакет можно начинать брать от $250. Большой пакет под запуск, с креативами и видео, стоит и $1,000 за один проект.",
     projectsForGoal: 4,
-    priceCaption: "Пример стоимости пакета",
     deliverable: "Креативы, видео и контент-пакеты для бизнеса.",
-    process: [
-      "бриф",
-      "идея",
-      "сценарий",
-      "генерация",
-      "сборка",
-      "проверка",
-    ],
-    humanSkills: [
-      "понимать задачу бизнеса",
-      "отбирать сильный результат",
-      "собирать требования",
-      "доводить пакет до готового вида",
-    ],
+    process: ["бриф", "идея", "сценарий", "генерация", "сборка", "проверка"],
     examples: [
       "креативы",
       "AI-видео",
@@ -154,13 +190,18 @@ export const directions: Record<DirectionId, Direction> = {
       "материалы для воронок",
       "рекламный контент",
     ],
-    curriculum: [
-      "AI-креативы",
-      "AI-видео",
-      "контент-пакеты",
-      "материалы для воронок",
-      "коммерческий контент для бизнеса",
-    ],
+    coursePackage: {
+      number: 2,
+      name: "Контент и воронки",
+      modules: [
+        "Контент-маркетинг, 16 форматов",
+        "Визуальный контент, фото, видео, AI-аватары",
+        "AI-контент завод",
+        "Создание AI-воронок",
+      ],
+      price: null,
+      url: null,
+    },
     path: [
       "Научиться собирать сильный AI-контент",
       "Собрать первый сильный пример",
@@ -174,10 +215,10 @@ export const directions: Record<DirectionId, Direction> = {
 
 export const directionOrder: DirectionId[] = ["automation", "landing", "content"];
 
-/** Сумма, которую даёт направление на цели: 1×1000, 2×500, 4×300 */
+/** Сумма по нижней границе вилки: 1×1000, 2×500, 4×250. Везде ровно $1,000. */
 export function totalForDirection(id: DirectionId): number {
   const d = directions[id];
-  return d.examplePrice * d.projectsForGoal;
+  return d.priceFrom * d.projectsForGoal;
 }
 
 export function formatUsd(value: number): string {

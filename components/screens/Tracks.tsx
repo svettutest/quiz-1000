@@ -4,16 +4,12 @@ import { motion } from "motion/react";
 import {
   directions,
   formatUsd,
+  pluralProjects,
+  projectsForTarget,
   type DirectionId,
 } from "@/lib/config";
 import { Coin, Halo } from "../Deco";
-import { Screen, Title } from "../Ui";
-
-function plural(n: number): string {
-  if (n === 1) return "проект";
-  if (n >= 2 && n <= 4) return "проекта";
-  return "проектов";
-}
+import { PillButton, Screen, Title } from "../Ui";
 
 const tints: Record<DirectionId, string> = {
   automation: "var(--color-tint-lilac)",
@@ -21,14 +17,16 @@ const tints: Record<DirectionId, string> = {
   content: "var(--color-tint-mint)",
 };
 
-/** Порядок направлений в программе задан ТЗ: контент, лендинги, автоматизации. */
-const trackOrder: DirectionId[] = ["content", "landing", "automation"];
+/** Порядок пакетов как в программе: 1, 2, 3. */
+const trackOrder: DirectionId[] = ["landing", "content", "automation"];
 
 export function Tracks({
   recommended,
+  target,
   onRestart,
 }: {
   recommended: DirectionId;
+  target: number;
   onRestart: () => void;
 }) {
   return (
@@ -36,13 +34,19 @@ export function Tracks({
       <div className="relative pt-6">
         <Halo />
         <div className="relative">
-          <Title>Три направления внутри программы</Title>
+          <Title>Три пакета программы</Title>
+          <p className="mt-4 text-[15px] leading-relaxed text-ink/55">
+            Каждый пакет закрывает своё направление целиком: от навыка до первых
+            коммерческих проектов.
+          </p>
         </div>
       </div>
 
       <div className="mt-8 flex flex-col gap-4">
         {trackOrder.map((id, i) => {
           const d = directions[id];
+          const pkg = d.coursePackage;
+          const count = projectsForTarget(id, target);
           const mine = id === recommended;
           return (
             <motion.div
@@ -63,55 +67,87 @@ export function Tracks({
                 </span>
               ) : null}
 
-              <h2
+              <p
                 className={[
-                  "relative text-[26px] font-semibold leading-none text-ink",
-                  mine ? "mt-3" : "",
+                  "relative text-[12px] uppercase tracking-[0.16em] text-ink/40",
+                  mine ? "mt-4" : "",
                 ].join(" ")}
+              >
+                Пакет {pkg.number}
+              </p>
+              <h2
+                className="relative mt-1 text-[26px] font-semibold leading-tight text-ink"
                 style={{ letterSpacing: "-0.04em" }}
               >
-                {d.title}
+                {pkg.name}
               </h2>
-
-              <p className="relative mt-4 text-[12px] uppercase tracking-[0.14em] text-ink/40">
-                Ученик осваивает
+              <p className="relative mt-1.5 text-[14px] font-medium text-violet-700">
+                Направление: {d.title.toLowerCase()}
               </p>
-              <div className="relative mt-2 flex flex-wrap gap-1.5">
-                {d.curriculum.map((s) => (
-                  <span
-                    key={s}
-                    className="rounded-full bg-white/70 px-3 py-1.5 text-[13px] text-ink/65"
+
+              <p className="relative mt-5 text-[12px] uppercase tracking-[0.14em] text-ink/40">
+                Модули
+              </p>
+              <ul className="relative mt-2.5 flex flex-col gap-2">
+                {pkg.modules.map((m) => (
+                  <li
+                    key={m}
+                    className="flex gap-2.5 text-[15px] leading-snug text-ink/75"
                   >
-                    {s}
-                  </span>
+                    <span className="mt-[8px] h-1.5 w-1.5 shrink-0 rounded-full bg-violet-700" />
+                    <span>{m}</span>
+                  </li>
                 ))}
+              </ul>
+
+              <div className="relative mt-5 flex items-end gap-6 border-t border-ink/10 pt-4">
+                <div>
+                  <p className="text-[12px] uppercase tracking-[0.14em] text-ink/40">
+                    Услуга на рынке
+                  </p>
+                  <p
+                    className="mt-1 text-[26px] font-bold leading-none text-ink-deep"
+                    style={{ letterSpacing: "-0.04em" }}
+                  >
+                    от {formatUsd(d.priceFrom)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[12px] uppercase tracking-[0.14em] text-ink/40">
+                    До {formatUsd(target)}
+                  </p>
+                  <p
+                    className="mt-1 text-[26px] font-bold leading-none text-ink-deep"
+                    style={{ letterSpacing: "-0.04em" }}
+                  >
+                    {count} {pluralProjects(count)}
+                  </p>
+                </div>
               </div>
 
-              <div className="relative mt-5 flex items-end gap-6">
-                <div>
+              {/* Цена участия и кнопка появятся, как только придёт актуальная сетка */}
+              {pkg.price !== null ? (
+                <div className="relative mt-5">
                   <p className="text-[12px] uppercase tracking-[0.14em] text-ink/40">
-                    Ориентир стоимости
+                    Стоимость пакета
                   </p>
                   <p
-                    className="mt-1 text-[30px] font-bold leading-none text-ink-deep"
-                    style={{ letterSpacing: "-0.04em" }}
+                    className="mt-1 text-[34px] font-bold leading-none text-ink-deep"
+                    style={{ letterSpacing: "-0.045em" }}
                   >
-                    {formatUsd(d.examplePrice)}
-                    {id === "automation" ? "+" : ""}
+                    {formatUsd(pkg.price)}
                   </p>
+                  <div className="mt-4">
+                    <PillButton
+                      onClick={() => {
+                        if (pkg.url) window.location.href = pkg.url;
+                      }}
+                    >
+                      Забрать пакет {pkg.number}
+                    </PillButton>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[12px] uppercase tracking-[0.14em] text-ink/40">
-                    До первой $1000
-                  </p>
-                  <p
-                    className="mt-1 text-[30px] font-bold leading-none text-ink-deep"
-                    style={{ letterSpacing: "-0.04em" }}
-                  >
-                    {d.projectsForGoal} {plural(d.projectsForGoal)}
-                  </p>
-                </div>
-              </div>
+              ) : null}
             </motion.div>
           );
         })}
@@ -119,7 +155,7 @@ export function Tracks({
 
       <div className="mt-8 rounded-[32px] bg-violet-900 p-6 text-white">
         <p className="text-[19px] leading-snug">
-          Первая $1000 с AI это не абстрактная мечта. Это конкретный навык,
+          {formatUsd(target)} с AI это не абстрактная мечта. Это конкретный навык,
           конкретная услуга, понятная стоимость, несколько коммерческих проектов
           и последовательность действий.
         </p>

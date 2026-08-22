@@ -2,17 +2,25 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { directionOrder, directions, type DirectionId } from "@/lib/config";
+import {
+  directionOrder,
+  directions,
+  targetAmount,
+  type DirectionId,
+} from "@/lib/config";
 import {
   aiLevelQuestion,
   directionQuestion,
   emptyProfile,
   firstCommitmentQuestion,
+  goalAmount,
+  goalQuestion,
   moneyQuestion,
   secondCommitmentQuestion,
   skillsQuestion,
   timeQuestion,
   type AiLevel,
+  type GoalId,
   type MoneyExperience,
   type PreferredDirection,
   type QuizProfile,
@@ -43,6 +51,7 @@ type Step =
   | "commit1"
   | "direction"
   | "time"
+  | "goal"
   | "ahaPrice"
   | "ahaMath"
   | "commit2"
@@ -62,6 +71,7 @@ const flow: Step[] = [
   "commit1",
   "direction",
   "time",
+  "goal",
   "ahaPrice",
   "ahaMath",
   "commit2",
@@ -81,6 +91,7 @@ const questionSteps: Step[] = [
   "commit1",
   "direction",
   "time",
+  "goal",
   "commit2",
 ];
 
@@ -111,6 +122,7 @@ export function Quiz() {
   const [skills, setSkills] = useState<SkillId[]>([]);
   const [preferred, setPreferred] = useState<PreferredDirection | null>(null);
   const [time, setTime] = useState<TimeId | null>(null);
+  const [goal, setGoal] = useState<GoalId | null>(null);
   const [commit1, setCommit1] = useState<string | null>(null);
   const [commit2, setCommit2] = useState<string | null>(null);
 
@@ -151,6 +163,9 @@ export function Quiz() {
     [aiLevel, money, skills, preferred, time],
   );
 
+  /** Вся математика дальше считается от этой суммы. */
+  const target = goal ? goalAmount[goal] : targetAmount;
+
   const scores = useMemo(() => scoreDirections(input), [input]);
   const ranked = useMemo(() => rankDirections(scores), [scores]);
   const recommended: DirectionId = ranked[0];
@@ -165,6 +180,7 @@ export function Quiz() {
       skills,
       preferredDirection: preferred,
       availableTime: time,
+      goal,
       firstCommitment: commit1,
       secondCommitment: commit2,
       scores,
@@ -178,6 +194,7 @@ export function Quiz() {
     skills,
     preferred,
     time,
+    goal,
     commit1,
     commit2,
     scores,
@@ -284,8 +301,20 @@ export function Quiz() {
           />
         ) : null}
 
+        {step === "goal" ? (
+          <Question
+            {...progress}
+            onBack={back}
+            title={goalQuestion.title}
+            hint={goalQuestion.hint}
+            options={goalQuestion.options}
+            selected={goal}
+            onPick={pick(setGoal)}
+          />
+        ) : null}
+
         {step === "ahaPrice" ? <AhaPrice onNext={next} /> : null}
-        {step === "ahaMath" ? <AhaMath onNext={next} /> : null}
+        {step === "ahaMath" ? <AhaMath target={target} onNext={next} /> : null}
 
         {step === "commit2" ? (
           <Question
@@ -301,15 +330,21 @@ export function Quiz() {
         {step === "building" ? <Building onDone={next} /> : null}
 
         {step === "result" ? (
-          <Result ranked={ranked} input={input} onNext={next} />
+          <Result ranked={ranked} input={input} target={target} onNext={next} />
         ) : null}
 
-        {step === "path" ? <Path id={recommended} onNext={next} /> : null}
+        {step === "path" ? (
+          <Path id={recommended} target={target} onNext={next} />
+        ) : null}
         {step === "program" ? <Program onNext={next} /> : null}
         {step === "platform" ? <Platform onNext={next} /> : null}
 
         {step === "tracks" ? (
-          <Tracks recommended={recommended} onRestart={() => go("intro")} />
+          <Tracks
+            recommended={recommended}
+            target={target}
+            onRestart={() => go("intro")}
+          />
         ) : null}
       </motion.div>
     </AnimatePresence>
@@ -378,6 +413,7 @@ function Intro({ onStart }: { onStart: () => void }) {
 
 interface QuestionProps<T extends string> extends ProgressProps {
   title: string;
+  hint?: string;
   options: { value: T; label: string }[];
   selected: T | null;
   onPick: (v: T) => void;
@@ -386,6 +422,7 @@ interface QuestionProps<T extends string> extends ProgressProps {
 
 function Question<T extends string>({
   title,
+  hint,
   options,
   selected,
   onPick,
@@ -403,6 +440,7 @@ function Question<T extends string>({
       {/* Вопрос стоит по центру экрана, а не прижат к шапке */}
       <div className="flex flex-1 flex-col justify-center pb-10">
         <QuestionTitle>{title}</QuestionTitle>
+        {hint ? <p className="mt-2 text-[14px] text-ink/40">{hint}</p> : null}
 
         <div className="mt-7 flex flex-col gap-2.5">
           {options.map((o, i) => (

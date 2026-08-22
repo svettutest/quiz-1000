@@ -1,11 +1,11 @@
 "use client";
 
 import { motion } from "motion/react";
-import { directionOrder, directions, formatUsd } from "@/lib/config";
+import { directionOrder, directions, type DirectionId } from "@/lib/config";
 import { Coin, Counter, Halo } from "../Deco";
 import { PillButton, Screen, Title } from "../Ui";
 
-const tints: Record<string, string> = {
+const tints: Record<DirectionId, string> = {
   automation: "var(--color-tint-lilac)",
   landing: "var(--color-tint-rose)",
   content: "var(--color-tint-mint)",
@@ -28,6 +28,10 @@ export function AhaPrice({ onNext }: { onNext: () => void }) {
             <br />
             десятки клиентов
           </Title>
+          <p className="mt-4 text-[15px] leading-relaxed text-ink/55">
+            Вот сколько эти услуги стоят на рынке сейчас. Это нижняя граница,
+            с которой можно начинать брать заказы.
+          </p>
         </div>
       </div>
 
@@ -50,15 +54,25 @@ export function AhaPrice({ onNext }: { onNext: () => void }) {
               <p className="relative text-[12px] uppercase tracking-[0.16em] text-ink/45">
                 {d.title}
               </p>
-              <p className="relative mt-6 text-[13px] text-ink/55">{d.priceCaption}</p>
+
+              <p className="relative mt-6 text-[13px] text-ink/55">На рынке сейчас</p>
+
+              {/* Вилка, а не фиксированная цена: потолка у этих услуг нет */}
               <p
-                className="relative mt-1 text-[52px] font-bold leading-none text-ink-deep"
+                className="relative mt-1 flex items-baseline gap-2 text-ink-deep"
                 style={{ letterSpacing: "-0.045em" }}
               >
-                <Counter value={d.examplePrice} prefix="$" delay={0.15 * i + 0.25} />
+                <span className="text-[22px] font-medium text-ink/50">от</span>
+                <span className="text-[52px] font-bold leading-none">
+                  <Counter value={d.priceFrom} prefix="$" delay={0.15 * i + 0.25} />
+                </span>
+                <span className="text-[22px] font-medium text-ink/50">
+                  {d.priceNote}
+                </span>
               </p>
-              <p className="relative mt-4 max-w-[16rem] text-[15px] leading-snug text-ink/60">
-                {d.blurb}
+
+              <p className="relative mt-4 text-[15px] leading-snug text-ink/60">
+                {d.marketLine}
               </p>
             </motion.div>
           );
@@ -66,9 +80,8 @@ export function AhaPrice({ onNext }: { onNext: () => void }) {
       </div>
 
       <p className="mt-6 text-[13px] leading-relaxed text-ink/40">
-        Это ориентиры рынка, а не обещание конкретной суммы. Цена всегда зависит
-        от задачи и от того, что ты умеешь дать бизнесу. Цель для сравнения:{" "}
-        {formatUsd(1000)}.
+        Цена всегда зависит от задачи и от того, что ты умеешь дать бизнесу.
+        Ниже показываем математику по самой нижней границе.
       </p>
     </Screen>
   );

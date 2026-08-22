@@ -16,6 +16,7 @@ export type SkillId =
   | "ai"
   | "none";
 export type TimeId = "week" | "hour" | "few" | "full";
+export type GoalId = "1000" | "3000" | "5000" | "10000";
 export type PreferredDirection = DirectionId | "unknown";
 
 export interface Option<T extends string> {
@@ -87,6 +88,29 @@ export const timeQuestion = {
   ] as Option<TimeId>[],
 };
 
+/**
+ * Цель человека. Вся математика дальше считается от неё, а не от фиксированной
+ * тысячи: «до твоей цели нужно столько-то заказов».
+ */
+export const goalQuestion = {
+  title: "Сколько ты хочешь выйти зарабатывать в месяц?",
+  hint: "От этого посчитаем, сколько проектов тебе нужно",
+  options: [
+    { value: "1000", label: "$1,000, первая цель" },
+    { value: "3000", label: "$3,000" },
+    { value: "5000", label: "$5,000" },
+    { value: "10000", label: "$10,000 и больше" },
+  ] as Option<GoalId>[],
+};
+
+/** Число из ответа. Держим отдельно, чтобы не парсить строку по всему коду. */
+export const goalAmount: Record<GoalId, number> = {
+  "1000": 1000,
+  "3000": 3000,
+  "5000": 5000,
+  "10000": 10000,
+};
+
 export const secondCommitmentQuestion = {
   title:
     "Если бы ты умел выполнять одну из этих услуг и понимал, где искать клиентов, ты бы попробовал на этом заработать?",
@@ -103,6 +127,7 @@ export interface QuizProfile {
   skills: SkillId[];
   preferredDirection: PreferredDirection | null;
   availableTime: TimeId | null;
+  goal: GoalId | null;
   firstCommitment: string | null;
   secondCommitment: string | null;
   scores: Record<DirectionId, number>;
@@ -115,6 +140,7 @@ export const emptyProfile: QuizProfile = {
   skills: [],
   preferredDirection: null,
   availableTime: null,
+  goal: null,
   firstCommitment: null,
   secondCommitment: null,
   scores: { automation: 0, landing: 0, content: 0 },

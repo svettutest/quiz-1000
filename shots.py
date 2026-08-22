@@ -4,7 +4,7 @@ import os
 from playwright.sync_api import sync_playwright
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "screenshots")
-URL = "http://localhost:3005/"
+URL = "http://localhost:3005/quiz-1000/"
 os.makedirs(OUT, exist_ok=True)
 
 
@@ -24,6 +24,8 @@ with sync_playwright() as p:
     page = browser.new_page(viewport={"width": 390, "height": 844}, device_scale_factor=2)
     page.goto(URL, wait_until="domcontentloaded")
     page.wait_for_timeout(3500)
+    # оверлей дев-режима сидит в левом нижнем углу и перехватывает клики по кнопке
+    page.add_style_tag(content="nextjs-portal{display:none!important;pointer-events:none!important}")
 
     shot(page, "01-intro")
     click_text(page, "Показать мой путь")
@@ -52,6 +54,9 @@ with sync_playwright() as p:
     shot(page, "08-time")
     click_text(page, "2-3 часа в день")
 
+    shot(page, "08b-goal")
+    click_text(page, "$3,000")
+
     shot(page, "09-aha-price", full=True)
     click_text(page, "Показать математику")
 
@@ -77,7 +82,7 @@ with sync_playwright() as p:
     page.wait_for_timeout(1100)
     shot(page, "13b-result-card2")
 
-    page.get_by_text("Что отделяет меня от $1000", exact=True).first.click()
+    page.get_by_text("Что отделяет меня от", exact=False).first.click()
     page.wait_for_timeout(900)
     shot(page, "14-path", full=True)
     click_text(page, "Дальше")

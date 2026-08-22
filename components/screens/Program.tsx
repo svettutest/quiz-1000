@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import { coursePhilosophy, courseResultLine } from "@/lib/config";
 import { Halo } from "../Deco";
 import { PillButton, Screen, Title } from "../Ui";
 
@@ -90,6 +91,22 @@ export function Program({ onNext }: { onNext: () => void }) {
       <div className="mt-8 flex flex-col gap-4">
         <Half eyebrow="Научиться" items={learn} delay={0.05} />
         <Half eyebrow="Монетизировать" items={monetize} dark delay={0.2} />
+      </div>
+
+      {/* Формулировка философии программы, слова Влада */}
+      <div className="mt-8 rounded-[32px] border border-ink/10 p-6">
+        <p className="text-[12px] uppercase tracking-[0.16em] text-ink/40">
+          Философия программы
+        </p>
+        <p
+          className="mt-3 text-[24px] font-semibold leading-[1.15] text-ink"
+          style={{ letterSpacing: "-0.03em" }}
+        >
+          {coursePhilosophy}
+        </p>
+        <p className="mt-4 text-[15px] leading-relaxed text-ink/55">
+          {courseResultLine}
+        </p>
       </div>
 
       <p className="mt-7 text-[17px] leading-relaxed text-ink/70">

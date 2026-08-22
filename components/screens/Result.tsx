@@ -5,18 +5,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   directions,
   formatUsd,
-  totalForDirection,
+  pluralProjects,
+  projectsForTarget,
+  totalForTarget,
   type DirectionId,
 } from "@/lib/config";
 import { rankLabel, reasonsFor, type ScoreInput } from "@/lib/scoring";
 import { Coin } from "../Deco";
 import { PillButton, Screen, Title } from "../Ui";
-
-function plural(n: number): string {
-  if (n === 1) return "проект";
-  if (n >= 2 && n <= 4) return "проекта";
-  return "проектов";
-}
 
 const tints: Record<DirectionId, string> = {
   automation: "var(--color-tint-lilac)",
@@ -29,13 +25,17 @@ function RouteCard({
   index,
   input,
   active,
+  target,
 }: {
   id: DirectionId;
   index: number;
   input: ScoreInput;
   active: boolean;
+  target: number;
 }) {
   const d = directions[id];
+  const count = projectsForTarget(id, target);
+  const pkg = d.coursePackage;
   const reasons = reasonsFor(id, input);
 
   return (
@@ -72,14 +72,13 @@ function RouteCard({
           Математика
         </p>
         <p className="mt-1.5 text-[14px] font-medium text-ink/55">
-          {d.projectsForGoal} {plural(d.projectsForGoal)} &times;{" "}
-          {formatUsd(d.examplePrice)}
+          {count} {pluralProjects(count)} &times; от {formatUsd(d.priceFrom)}
         </p>
         <p
           className="mt-0.5 text-[34px] font-bold leading-none text-ink-deep"
           style={{ letterSpacing: "-0.045em" }}
         >
-          {formatUsd(totalForDirection(id))}
+          {formatUsd(totalForTarget(id, target))}
         </p>
       </div>
 
@@ -116,17 +115,23 @@ function RouteCard({
         ))}
       </div>
 
-      <p className="relative mt-6 text-[12px] uppercase tracking-[0.14em] text-ink/40">
-        Что необходимо научиться делать
-      </p>
-      <ul className="relative mt-2.5 flex flex-col gap-2">
-        {d.humanSkills.map((s) => (
-          <li key={s} className="flex gap-2.5 text-[14px] leading-snug text-ink/70">
-            <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-ink/25" />
-            <span>{s}</span>
-          </li>
-        ))}
-      </ul>
+      {/* Чему учиться, взято из реальной программы Академии, а не сочинено */}
+      <div className="relative mt-6 rounded-2xl bg-violet-900 p-5 text-white">
+        <p className="text-[12px] uppercase tracking-[0.14em] text-white/45">
+          Чему учишься
+        </p>
+        <p className="mt-2 text-[16px] font-semibold leading-snug">
+          Пакет {pkg.number}. {pkg.name}
+        </p>
+        <ul className="mt-3 flex flex-col gap-2">
+          {pkg.modules.map((m) => (
+            <li key={m} className="flex gap-2.5 text-[14px] leading-snug text-white/80">
+              <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-violet-300" />
+              <span>{m}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </motion.article>
   );
 }
@@ -134,10 +139,12 @@ function RouteCard({
 export function Result({
   ranked,
   input,
+  target,
   onNext,
 }: {
   ranked: DirectionId[];
   input: ScoreInput;
+  target: number;
   onNext: () => void;
 }) {
   const railRef = useRef<HTMLDivElement>(null);
@@ -192,12 +199,14 @@ export function Result({
     <Screen
       footer={
         <div className="pb-2">
-          <PillButton onClick={onNext}>Что отделяет меня от $1000</PillButton>
+          <PillButton onClick={onNext}>
+            Что отделяет меня от {formatUsd(target)}
+          </PillButton>
         </div>
       }
     >
       <div className="pt-6">
-        <Title>Твой путь к первой $1000</Title>
+        <Title>Твой путь к {formatUsd(target)}</Title>
         <p className="mt-3 text-[15px] leading-relaxed text-ink/50">
           Мы сравнили три направления по твоим ответам. Листай, чтобы посмотреть
           все.
@@ -211,7 +220,14 @@ export function Result({
         style={{ gridAutoColumns: "min(82vw, 340px)" }}
       >
         {ranked.map((id, i) => (
-          <RouteCard key={id} id={id} index={i} input={input} active={active === i} />
+          <RouteCard
+            key={id}
+            id={id}
+            index={i}
+            input={input}
+            target={target}
+            active={active === i}
+          />
         ))}
       </div>
 

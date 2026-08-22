@@ -5,17 +5,14 @@ import {
   directionOrder,
   directions,
   formatUsd,
-  totalForDirection,
+  pluralProjects,
+  projectsForTarget,
+  totalForTarget,
   type DirectionId,
 } from "@/lib/config";
 import { Halo } from "../Deco";
 import { PillButton, Screen, Title } from "../Ui";
-
-function plural(n: number): string {
-  if (n === 1) return "проект";
-  if (n >= 2 && n <= 4) return "проекта";
-  return "проектов";
-}
+import { DemandBoard } from "./DemandBoard";
 
 const tints: Record<DirectionId, string> = {
   automation: "var(--color-tint-lilac)",
@@ -37,7 +34,13 @@ function Token({ price, delay }: { price: number; delay: number }) {
   );
 }
 
-export function AhaMath({ onNext }: { onNext: () => void }) {
+export function AhaMath({
+  target,
+  onNext,
+}: {
+  target: number;
+  onNext: () => void;
+}) {
   return (
     <Screen
       footer={
@@ -50,10 +53,14 @@ export function AhaMath({ onNext }: { onNext: () => void }) {
         <Halo />
         <div className="relative">
           <Title>
-            Как может выглядеть
+            Из чего складываются
             <br />
-            твоя первая $1000
+            твои {formatUsd(target)}
           </Title>
+          <p className="mt-4 text-[15px] leading-relaxed text-ink/55">
+            Считаем по самой нижней границе вилки. Если брать дороже, проектов
+            нужно меньше.
+          </p>
         </div>
       </div>
 
@@ -61,7 +68,8 @@ export function AhaMath({ onNext }: { onNext: () => void }) {
         {directionOrder.map((id, i) => {
           const d = directions[id];
           const base = 0.2 * i;
-          const total = totalForDirection(id);
+          const count = projectsForTarget(id, target);
+          const total = totalForTarget(id, target);
           return (
             <motion.div
               key={id}
@@ -76,14 +84,18 @@ export function AhaMath({ onNext }: { onNext: () => void }) {
               </p>
 
               <div className="mt-5 flex flex-wrap gap-2">
-                {Array.from({ length: d.projectsForGoal }).map((_, k) => (
-                  <Token key={k} price={d.examplePrice} delay={base + 0.25 + k * 0.12} />
+                {Array.from({ length: Math.min(count, 12) }).map((_, k) => (
+                  <Token key={k} price={d.priceFrom} delay={base + 0.25 + k * 0.06} />
                 ))}
+                {count > 12 ? (
+                  <span className="self-center text-[13px] font-medium text-ink/45">
+                    и ещё {count - 12}
+                  </span>
+                ) : null}
               </div>
 
               <p className="mt-5 text-[15px] font-medium text-ink/55">
-                {d.projectsForGoal} {plural(d.projectsForGoal)} &times;{" "}
-                {formatUsd(d.examplePrice)}
+                {count} {pluralProjects(count)} &times; {formatUsd(d.priceFrom)}
               </p>
               <p
                 className="mt-1 text-[44px] font-bold leading-none text-ink-deep"
@@ -91,15 +103,20 @@ export function AhaMath({ onNext }: { onNext: () => void }) {
               >
                 {formatUsd(total)}
               </p>
+              <p className="mt-3 text-[13px] leading-snug text-ink/45">
+                Или один проект дороже вместо нескольких мелких.
+              </p>
             </motion.div>
           );
         })}
       </div>
 
       <p className="mt-6 text-[13px] leading-relaxed text-ink/40">
-        Смысл простой: первая $1000 это не толпа клиентов, а несколько
-        коммерческих проектов.
+        Смысл простой: {formatUsd(target)} это не толпа клиентов, а понятное
+        количество коммерческих проектов.
       </p>
+
+      <DemandBoard />
     </Screen>
   );
 }
